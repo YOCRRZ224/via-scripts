@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         YOCRRZ Anti-Annoyance
+// @name         Anti-Annoyance
 // @namespace    yocrrz.dev
 // @version      1.0
 // @description  Automatically removes 'Disable Adblock' and 'Cookie Consent' overlays.
