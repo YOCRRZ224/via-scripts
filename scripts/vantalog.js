@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VantaLog
 // @namespace    yocrrz.dev
-// @version      2.02
+// @version      2.08
 // @description  VantaLog is a powerful in-browser debugging overlay designed for developers who want deep visibility into what’s happening inside any webpage without needing traditional dev tools. It captures and displays console logs, warnings, errors, debug messages, network requests (fetch and XHR), and uncaught exceptions in real time through a sleek, glassmorphic UI panel. With built-in filtering, resource inspection, log exporting, and performance tracking, it transforms any mobile browser into a lightweight debugging environment. The floating toggle system ensures quick access, while features like log categorization, request timing, and interactive controls make it ideal for debugging production sites, testing scripts, or analyzing complex web behavior directly from your device.
 // @author       YOCRRZ
 // @category     Dev Tools
