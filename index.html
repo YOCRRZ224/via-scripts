@@ -624,7 +624,9 @@ async function openPreview(script) {
         <div class="btn-group">
             <button class="primary" onclick="install('${script.url}')">Install via CDN</button>
         </div>
-
+         <button class="secondary-btn" onclick="openInstallGuide()" style="margin-bottom: 10px; border-style: dashed;">
+        📖 HOW_TO_INSTALL
+    </button>
         <button class="secondary-btn" id="view-code-btn" onclick="toggleCode('${script.url}')">View Source Code</button>
 
         <div id="code-container">
