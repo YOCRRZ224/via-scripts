@@ -4,6 +4,7 @@
 // @version      1.0
 // @description  Automatically skips 'Please Wait' timers and link-shortener redirects.
 // @author       YOCRRZ
+// @category     Daily
 // @icon         🚀
 // @match        *://*/*
 // @grant        none
