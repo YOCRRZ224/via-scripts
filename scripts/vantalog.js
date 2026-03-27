@@ -12,6 +12,10 @@
 // ==/UserScript==
 (function () {
   const MAX_LINES = 1000;
+    // --- Inject Phosphor Icons ---
+  const phosphorScript = document.createElement('script');
+  phosphorScript.src = "https://unpkg.com/@phosphor-icons/web";
+  document.head.appendChild(phosphorScript);
 
   // --- Overlay ---
   const dbg = document.createElement('div');
