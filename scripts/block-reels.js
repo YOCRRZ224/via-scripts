@@ -7,7 +7,7 @@
 // @match        *://www.instagram.com/*
 // @run-at       document-idle
 // @grant        none
-// @category     UI
+// @category     media
 // @icon         🧹
 // ==/UserScript==
 
