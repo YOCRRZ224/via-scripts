@@ -5,7 +5,7 @@
 // @description  Force websites to serve the full Desktop version by spoofing UA and screen.
 // @author       YOCRRZ
 // @icon         🖥️
-// @category     daily
+// @category     Daily
 // @match        *://*/*
 // @grant        none
 // @run-at       document-start
