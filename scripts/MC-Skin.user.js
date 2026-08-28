@@ -2,7 +2,7 @@
 // @name            MC-Skin
 // @name:en         MC-Skin
 // @namespace       https://viayoo.com/
-// @version         5.1
+// @version         5.3
 // @description     在网页里添加一个MC小人
 // @description:en  Add Minecraft skin in webpage
 // @author          undefined303
@@ -107,71 +107,23 @@
 			});
 		};
 	}
-
-	function getIframeIndex(id, max) {
-		var messageListener;
-		return new Promise((resolve, reject) => {
-			var timeout = setTimeout(() => {
-				reject();
-			}, 500);
-			messageListener = (e) => {
-				if (e.data.type == "McSkinIframeIndex") {
-					e.stopImmediatePropagation();
-					//4.读取index
-					if (id == e.data.id) {
-						var index = e.data.data;
-						if (index <= max) {
-							resolve(index);
-							clearTimeout(timeout);
-						} else {
-							reject();
-							clearTimeout(timeout);
-						}
-					}
-				}
-			}
-			window.addEventListener("message", messageListener, {
-				passive: true
-			})
-		}).then((data) => {
-			window.removeEventListener("message", messageListener)
-			return data;
-		}).catch(() => {
-			window.removeEventListener("message", messageListener)
-			console.error("iframe获取index信息超时");
-			return "error";
-		})
-	}
 	window.addEventListener("message", async function(e) {
 		if (e.data.type == "McSkinIframeGetPosition") {
 			e.stopImmediatePropagation();
-			//2.收到获取位置信息请求，发送询问谁需要位置信息
-			var iframes = [...document.getElementsByTagName("iframe")]
-			var i = -1;
-			iframes.forEach((ele) => {
-				i++;
-				ele.contentWindow.postMessage({
-					type: "McSkinIframeGetPositionIndex",
-					id: e.data.id,
-					index: i
-				}, "*")
-
-			})
-			var iframeIndex = await getIframeIndex(e.data.id, iframes.length - 1);
-			if (iframeIndex == "error") {
-				iframes.forEach((ele) => {
-					ele.contentWindow.postMessage({
-						type: "McSkinIframeGetPositionError",
-						id: e.data.id
-					}, "*")
-				})
+			//2.收到获取位置信息请求，拿到获取的iframe
+			const iframe = Array.from(document.getElementsByTagName("iframe")).find(f => f.contentWindow === e.source);
+			if (!iframe) {
+				e.source.postMessage({
+					type: "McSkinIframeGetPositionError",
+					id: e.data.id
+				}, "*");
 				return;
 			}
 			//使用上一帧布局信息，避免强制同步布局
 			requestAnimationFrame(() => {
-				var bcr = iframes[iframeIndex].getBoundingClientRect();
-				//5.发送位置信息
-				iframes[iframeIndex].contentWindow.postMessage({
+				var bcr = iframe.getBoundingClientRect();
+				//3.发送位置信息
+				iframe.contentWindow.postMessage({
 					type: "McSkinIframePositionData",
 					data: {
 						x: bcr.left,
@@ -185,26 +137,6 @@
 		passive: true
 	})
 	if (self != top) {
-		var isGettingPosition = false;
-
-		function messageReceiver(e) {
-			if (e.data.type == 'McSkinIframeGetPositionIndex') {
-				e.stopImmediatePropagation();
-				//3.收到询问信息，如果需要，回答index
-				if (isGettingPosition) {
-					window.parent.postMessage({
-						type: "McSkinIframeIndex",
-						data: e.data.index,
-						id: e.data.id
-					}, '*');
-				}
-				isGettingPosition = false;
-			}
-		}
-
-		window.addEventListener('message', messageReceiver, {
-			passive: true
-		})
 		var getIframePosition = function() {
 			var id = Date.now() + Math.random();
 			//1.发送请求获取位置信息
@@ -217,12 +149,11 @@
 					window.removeEventListener("message", positionMessageReceiver);
 					reject();
 				}, 500);
-				isGettingPosition = true;
 
 				function positionMessageReceiver(e) {
 					if (e.data.type == "McSkinIframePositionData" && e.data.id == id) {
 						e.stopImmediatePropagation();
-						//6.接受位置信息
+						//4.接受位置信息
 						var positionData = e.data.data;
 						window.removeEventListener("message", positionMessageReceiver);
 						if (positionData == "error") {
@@ -278,7 +209,6 @@
 			})
 		}
 		async function pushEventMessage(e) {
-			if (document.domain.split('.').slice(-2).join(".") == "githubusercontent.com") return;
 			let data = {};
 			if (e.type == "touchstart" || e.type == "touchmove" || e.type == "mousemove") {
 				let lock = false;
@@ -902,47 +832,78 @@ margin-top:20px;
 	const head = skinViewer.playerObject.skin.head;
 	var isPlayingAfkAnimation;
 	var timeout0;
+	var resetPosition = () => {
+		var pl = skinViewer.playerObject;
+		pl.skin.head.rotation.set(0, 0, 0);
+		pl.skin.leftArm.rotation.set(0, 0, 0);
+		pl.skin.rightArm.rotation.set(0, 0, 0);
+		pl.skin.leftLeg.rotation.set(0, 0, 0);
+		pl.skin.rightLeg.rotation.set(0, 0, 0);
+		pl.skin.body.rotation.set(0, 0, 0);
+		pl.skin.head.position.y = 0;
+		pl.skin.body.position.x = 0;
+		pl.skin.body.position.y = -6;
+		pl.skin.body.position.z = 0;
+		pl.skin.rightArm.position.x = -5;
+		pl.skin.rightArm.position.y = -2;
+		pl.skin.rightArm.position.z = 0;
+		pl.skin.leftArm.position.x = 5;
+		pl.skin.leftArm.position.y = -2;
+		pl.skin.leftArm.position.z = 0;
+		pl.skin.rightLeg.position.x = -1.9;
+		pl.skin.rightLeg.position.y = -12;
+		pl.skin.rightLeg.position.z = -0.1;
+		pl.skin.leftLeg.position.x = 1.9;
+		pl.skin.leftLeg.position.y = -12;
+		pl.skin.leftLeg.position.z = -0.1;
+	}
 	var AfkAnimation = () => {
-		head.rotation.x = 0;
-		head.rotation.y = 0;
-		head.rotation.z = 0;
-		addAnimation = (pl, pr) => {
-			var kT = 13.5;
-			var sin0 = (x) => {
-				var r = Math.pow(Math.abs(Math.sin(x)), 1 / 1.5);
-				return Math.sin(x) > 0 ? r : -r;
+		stopAddedAnimation();
+		resetPosition();
+		var hours = new Date().getHours();
+		if (Math.random() <= 0.4 + 0.05 * Math.min(hours, Math.abs(12 - hours), 24 - hours)) {
+			addAnimation = (pl, pr) => {
+				var kT = 13.5;
+				var sin0 = (x) => {
+					var r = Math.pow(Math.abs(Math.sin(x)), 1 / 1.5);
+					return Math.sin(x) > 0 ? r : -r;
+				}
+				var kD = 0.25;
+				var t1 = Math.abs(sin0(pr / 2 * kT));
+				pl.skin.body.rotation.x = 0.4537860552 * (1 - kD * t1);
+				pl.skin.body.position.z = 1.3256181 * (1 - kD * t1) - 3.4500310377 * (1 - kD * t1);
+				pl.skin.body.position.y = -6 - 2.103677462 * (1 - kD * t1);
+				pl.skin.head.position.y = -3.618325234674 * (1 - kD * t1);
+				pl.skin.leftArm.position.z = 3.618325234674 * (1 - kD * t1) - 3.4500310377 * (1 - kD * t1);
+				pl.skin.rightArm.position.z = pl.skin.leftArm.position.z;
+				pl.skin.leftArm.rotation.x = 0.510367746202 * (1 - kD * t1);
+				pl.skin.rightArm.rotation.x = pl.skin.leftArm.rotation.x;
+				pl.skin.leftArm.rotation.z = 0.1 * (1 - kD * t1);
+				pl.skin.rightArm.rotation.z = -pl.skin.leftArm.rotation.z;
+				pl.skin.leftArm.position.y = -2 - 2.53943318 * (1 - kD * t1);
+				pl.skin.rightArm.position.y = pl.skin.leftArm.position.y;
+				pl.skin.rightLeg.position.z = -3.4500310377 * (1 - kD * t1);
+				pl.skin.leftLeg.position.z = pl.skin.rightLeg.position.z;
+				var mD = 1.5;
+				var t = sin0(pr * kT) * mD;
+				pl.skin.leftLeg.rotation.z = -Math.asin((pl.skin.leftLeg.position.x - 1.9) / 12);
+				pl.skin.leftLeg.position.x = t + 1.9;
+				pl.skin.rightLeg.rotation.z = pl.skin.leftLeg.rotation.z;
+				pl.skin.rightLeg.position.x = t - 1.9;
+				pl.skin.body.position.x = t / 2;
+				pl.skin.leftArm.position.x = t / 2 + 5 - 0.5 * sin0(Math.max(pr - 0.25 / kT, 0) * kT);
+				pl.skin.rightArm.position.x = t / 2 - 5 - 0.5 * sin0(Math.max(pr - 0.25 / kT, 0) * kT);
+				pl.skin.body.rotation.z = -pl.skin.rightLeg.rotation.z;
+				pl.skin.leftArm.rotation.z = Math.asin(sin0(Math.max(pr - 0.25 / kT, 0) * kT) * mD / 12) + Math.PI / 18;
+				pl.skin.rightArm.rotation.z = pl.skin.leftArm.rotation.z - 2 * Math.PI / 18;
+				pl.skin.leftArm.position.y = -2.5 * Math.sin(pl.skin.leftLeg.rotation.z) - 2 - 2.53943318 * (1 - kD * Math.abs(sin0(pr / 2 * kT)));
+				pl.skin.rightArm.position.y = 2.5 * Math.sin(pl.skin.rightLeg.rotation.z) - 2 - 2.53943318 * (1 - kD * Math.abs(sin0(pr / 2 * kT)));
+				pl.skin.head.rotation.z = pl.skin.body.rotation.z * 1 / 3;
 			}
-			var kD = 0.25;
-			var t1 = Math.abs(sin0(pr / 2 * kT));
-			pl.skin.body.rotation.x = 0.4537860552 * (1 - kD * t1);
-			pl.skin.body.position.z = 1.3256181 * (1 - kD * t1) - 3.4500310377 * (1 - kD * t1);
-			pl.skin.body.position.y = -6 - 2.103677462 * (1 - kD * t1);
-			pl.skin.head.position.y = -3.618325234674 * (1 - kD * t1);
-			pl.skin.leftArm.position.z = 3.618325234674 * (1 - kD * t1) - 3.4500310377 * (1 - kD * t1);
-			pl.skin.rightArm.position.z = pl.skin.leftArm.position.z;
-			pl.skin.leftArm.rotation.x = 0.510367746202 * (1 - kD * t1);
-			pl.skin.rightArm.rotation.x = pl.skin.leftArm.rotation.x;
-			pl.skin.leftArm.rotation.z = 0.1 * (1 - kD * t1);
-			pl.skin.rightArm.rotation.z = -pl.skin.leftArm.rotation.z;
-			pl.skin.leftArm.position.y = -2 - 2.53943318 * (1 - kD * t1);
-			pl.skin.rightArm.position.y = pl.skin.leftArm.position.y;
-			pl.skin.rightLeg.position.z = -3.4500310377 * (1 - kD * t1);
-			pl.skin.leftLeg.position.z = pl.skin.rightLeg.position.z;
-			var mD = 1.5;
-			var t = sin0(pr * kT) * mD;
-			pl.skin.leftLeg.rotation.z = -Math.asin((pl.skin.leftLeg.position.x - 1.9) / 12);
-			pl.skin.leftLeg.position.x = t + 1.9;
-			pl.skin.rightLeg.rotation.z = pl.skin.leftLeg.rotation.z;
-			pl.skin.rightLeg.position.x = t - 1.9;
-			pl.skin.body.position.x = t / 2;
-			pl.skin.leftArm.position.x = t / 2 + 5 - 0.5 * sin0(Math.max(pr - 0.25 / kT, 0) * kT);
-			pl.skin.rightArm.position.x = t / 2 - 5 - 0.5 * sin0(Math.max(pr - 0.25 / kT, 0) * kT);
-			pl.skin.body.rotation.z = -pl.skin.rightLeg.rotation.z;
-			pl.skin.leftArm.rotation.z = Math.asin(sin0(Math.max(pr - 0.25 / kT, 0) * kT) * mD / 12) + Math.PI / 18;
-			pl.skin.rightArm.rotation.z = pl.skin.leftArm.rotation.z - 2 * Math.PI / 18;
-			pl.skin.leftArm.position.y = -2.5 * Math.sin(pl.skin.leftLeg.rotation.z) - 2 - 2.53943318 * (1 - kD * Math.abs(sin0(pr / 2 * kT)));
-			pl.skin.rightArm.position.y = 2.5 * Math.sin(pl.skin.rightLeg.rotation.z) - 2 - 2.53943318 * (1 - kD * Math.abs(sin0(pr / 2 * kT)));
-			pl.skin.head.rotation.z = pl.skin.body.rotation.z * 1 / 3;
+		} else {
+			addAnimation = (pl, pr) => {
+				pl.skin.head.rotation.x = Math.PI / 2 - 0.01 - 0.45 * (pr % Math.PI <= Math.PI / 2 ? Math.sin(pr % Math.PI) : pr % Math.PI <= (Math.PI / 2 + (Math.PI / 2) / 2.5) ? Math.sin(Math.PI / 2 - 2.5 * (pr % Math.PI - Math.PI / 2)) : 0);
+			}
 		}
 	}
 	isPlayingAfkAnimation = false;
@@ -953,30 +914,8 @@ margin-top:20px;
 	var handleAfkAnimation = () => {
 		clearTimeout(timeout0);
 		if (isPlayingAfkAnimation) {
-			addAnimation = () => {}
-			var pl = skinViewer.playerObject;
-			pl.skin.head.rotation.set(0, 0, 0);
-			pl.skin.leftArm.rotation.set(0, 0, 0);
-			pl.skin.rightArm.rotation.set(0, 0, 0);
-			pl.skin.leftLeg.rotation.set(0, 0, 0);
-			pl.skin.rightLeg.rotation.set(0, 0, 0);
-			pl.skin.body.rotation.set(0, 0, 0);
-			pl.skin.head.position.y = 0;
-			pl.skin.body.position.x = 0;
-			pl.skin.body.position.y = -6;
-			pl.skin.body.position.z = 0;
-			pl.skin.rightArm.position.x = -5;
-			pl.skin.rightArm.position.y = -2;
-			pl.skin.rightArm.position.z = 0;
-			pl.skin.leftArm.position.x = 5;
-			pl.skin.leftArm.position.y = -2;
-			pl.skin.leftArm.position.z = 0;
-			pl.skin.rightLeg.position.x = -1.9;
-			pl.skin.rightLeg.position.y = -12;
-			pl.skin.rightLeg.position.z = -0.1;
-			pl.skin.leftLeg.position.x = 1.9;
-			pl.skin.leftLeg.position.y = -12;
-			pl.skin.leftLeg.position.z = -0.1;
+			stopAddedAnimation();
+			resetPosition();
 			isPlayingAfkAnimation = false;
 		}
 		timeout0 = setTimeout(() => {
@@ -1003,6 +942,7 @@ margin-top:20px;
 		endRotationXL = undefined;
 		isTimeoutSetted = true;
 		clearTimeout(waveTimeout);
+		clearTimeout(timeout);
 		addAnimation = () => {}
 	}
 	var waveTimeout;
@@ -1171,6 +1111,7 @@ margin-top:20px;
 			progress2 = undefined;
 		}, 300)
 	}
+	handleMouseWheelEvent = rafThrottle(handleMouseWheelEvent);
 	window.addEventListener("wheel", handleMouseWheelEvent, {
 		passive: true,
 		capture: true
@@ -1205,6 +1146,7 @@ margin-top:20px;
 			}
 		}
 	}
+	mousedownFunction = rafThrottle(mousedownFunction);
 	window.addEventListener("mousedown", mousedownFunction, {
 		passive: true,
 		capture: true
@@ -1218,7 +1160,7 @@ margin-top:20px;
 
 	function handleInputEvent() {
 		try {
-			clearTimeout(timeout)
+			clearTimeout(timeout);
 		} catch (e) {}
 		var deltaTime;
 		if (time0 == -1) {
@@ -1262,7 +1204,7 @@ margin-top:20px;
 			progress4 = undefined;
 		}, 600)
 	}
-
+	handleInputEvent = rafThrottle(handleInputEvent);
 	document.addEventListener('keydown', () => {
 		handleAfkAnimation();
 		handleInputEvent();
